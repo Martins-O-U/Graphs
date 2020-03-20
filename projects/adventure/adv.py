@@ -1,6 +1,8 @@
 from room import Room
 from player import Player
 from world import World
+import copy
+from util import Stack, Queue
 
 import random
 from ast import literal_eval
@@ -27,8 +29,55 @@ player = Player(world.starting_room)
 
 # Fill this out with directions to walk
 # traversal_path = ['n', 'n']
+
 traversal_path = []
 
+graph = {}
+reversal = {'n': 's', 's': 'n', 'w': 'e', 'e': 'w'}
+
+def set_exits(room):
+    graph[room] = {}
+    for exit in player.current_room.get_exits():
+        graph[room][exit] = '?'
+
+def connect_rooms(previous, current, direction):
+    if not graph.get(current):
+        set_exits(current)
+    graph[previous][direction] = current 
+    graph[current][reversal[direction]] = previous
+
+def unexplored_exits(room):
+    results = []
+    for exit in player.current_room.get_exits():
+        if graph[room][exit] == '?':
+            results.append(exit)
+    return results
+
+set_exits(player.current_room.id)
+previous_room = player.current_room.id
+
+s = Stack()
+s.push(player.current_room)
+
+
+while len(graph) < len(world.rooms):
+    # choose random move, if none avaiable, move back
+    if unexplored_exits(player.current_room.id):
+        # set move to random choice
+        move = (unexplored_exits(player.current_room.id)).pop()
+        # add to stack
+        s.push(move)
+    else:
+        # set move to backwards and remove from route
+        move = reversal[s.pop()]
+
+    # move to next room
+    player.travel(move)
+    # add move to route
+    traversal_path.append(move)
+    # connect the 2 adjoining rooms
+    connect_rooms(previous_room, player.current_room.id, move)
+    previous_room = player.current_room.id
 
 
 # TRAVERSAL TEST
